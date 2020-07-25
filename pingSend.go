@@ -16,14 +16,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
 
 	wm := icmp.Message{
         Type: ipv4.ICMPTypeEcho, Code: 0,
         Body: &icmp.Echo{
 			ID: os.Getpid() & 0xffff, Seq: 1,
 			// b64 encoded secret string, below is "Activate"
-            Data: []byte("QWN0aXZhdGUV"),
+			Data: []byte("QWN0aXZhdGUV"),
         },
 	}
 
