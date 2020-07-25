@@ -82,7 +82,7 @@ func main() {
 		fmt.Println("\n[+] Secret message decoded:")
 		base64Text := make([]byte, base64.StdEncoding.DecodedLen(len(hexDecode)))
 		decode, _ := base64.StdEncoding.Decode(base64Text, []byte(hexDecode))
-		// string
+		// Secret string
 		incomingMessage := fmt.Sprintf("%s", base64Text[:decode])
 
 		fmt.Printf("%s\n\n", base64Text[:decode])
