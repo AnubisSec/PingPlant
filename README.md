@@ -67,3 +67,8 @@ go run pingSend.go
 # Demo
 
 [![asciicast](https://asciinema.org/a/SvNWp9d8a6U3Zyz8WGhTns9Na.svg)](https://asciinema.org/a/SvNWp9d8a6U3Zyz8WGhTns9Na)
+
+
+# Disclaimer
+
+DO NOT run this on any system you don't have permission to. The author takes no responsibility if this code is used for any purpose other than educational. This was made purely for learning and educational purposes.
