@@ -55,7 +55,7 @@ go run pingSend.go
 # Features
 
 * Runtime process renaming
-* Runtime process renaming
+* No listening ports
 * Written in Go, so almost all AV's will never pick this up
 
 
