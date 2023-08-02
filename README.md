@@ -1,5 +1,7 @@
 # PingPlant
 
+## OUTDATED, NEED TO REDO DOCS
+
 `PingPlant` is a Linux implant PoC that starts a custom listener for ICMP data, and parses the ethernet frame to check for a special payload.
 
 If this payload is found, it will then initiate a callback to a defined IP.
