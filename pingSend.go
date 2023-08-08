@@ -38,7 +38,7 @@ const targetIP = "10.10.100.155"
 // To be used as an egg later
 //const secretMessage = "Activate"
 
-var agentChoice []string
+// var agentChoice []string
 var activeAgent string
 var conn *icmp.PacketConn
 var listenErr error
