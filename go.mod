@@ -1,12 +1,12 @@
-module PingPlant
+module pingplant
 
 go 1.18
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/fatih/color v1.13.0
+	github.com/go-ole/go-ole v1.2.6
 	github.com/iamacarpet/go-win64api v0.0.0-20230324134531-ef6dbdd6db97
-	github.com/kirito41dd/xslice v0.0.1
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/rs/zerolog v1.28.0
@@ -16,7 +16,6 @@ require (
 
 require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
-	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/google/cabbie v1.0.2 // indirect
 	github.com/google/glazier v0.0.0-20211029225403-9f766cca891d // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect

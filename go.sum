@@ -62,8 +62,6 @@ github.com/iamacarpet/go-win64api v0.0.0-20230324134531-ef6dbdd6db97 h1:VjwKCN2P
 github.com/iamacarpet/go-win64api v0.0.0-20230324134531-ef6dbdd6db97/go.mod h1:B7zFQPAznj+ujXel5X+LUoK3LgY6VboCdVYHZNn7gpg=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 h1:Z9n2FFNUXsshfwJMBgNA0RU6/i7WVaAegv3PtuIHPMs=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
-github.com/kirito41dd/xslice v0.0.1 h1:xdKcQuqW7U+D0G0Blm8cFSa8d5uYpXdAdrdhdDF5Ouk=
-github.com/kirito41dd/xslice v0.0.1/go.mod h1:DssfTDnaN6Iboqi0g7d8sKIY0nm1cWnAYRo4L6F0RP8=
 github.com/manifoldco/promptui v0.9.0 h1:3V4HzJk1TtXW1MTZMP7mdlwbBpIinw3HztaIlYthEiA=
 github.com/manifoldco/promptui v0.9.0/go.mod h1:ka04sppxSGFAtxX0qhlYQjISsg9mR4GWtQEhdbn6Pgg=
 github.com/mattn/go-colorable v0.1.2/go.mod h1:U0ppj6V5qS13XJ6of8GYAs25YV2eR4EVcfRqFIhoBtE=

