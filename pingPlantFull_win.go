@@ -1,6 +1,5 @@
 // This is the code for the full on implant for windows targets
 
-// TODO: Chunk data into queues
 // TODO: Create Checkin routine with relevant data
 // TODO: Implement secret Message for initial callback
 // TODO: Create a UUID check in the message, otherwise all agents run any command sent to any agent

